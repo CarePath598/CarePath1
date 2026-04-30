@@ -3,12 +3,33 @@ from flask_cors import CORS
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import os
+import requests
 
-app = Flask(__name__) 
+app = Flask(__name__)
 CORS(app)
 
+# 🔥 URL del modelo
+MODEL_URL = "http://vj5.294.mytemp.website/best.pt"
+MODEL_PATH = "best.pt"
+
+
+# 🧠 descargar modelo si no existe
+def descargar_modelo():
+    if not os.path.exists(MODEL_PATH):
+        print("⬇ Descargando modelo YOLO...")
+        r = requests.get(MODEL_URL, stream=True)
+        with open(MODEL_PATH, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+        print("✅ Modelo descargado correctamente")
+
+
+# 🚀 asegurar que el modelo exista ANTES de cargar YOLO
+descargar_modelo()
+
 # 🧠 cargar modelo UNA SOLA VEZ
-model = YOLO("best.pt")
+model = YOLO(MODEL_PATH)
 
 
 @app.route("/predict", methods=["POST"])
