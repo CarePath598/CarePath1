@@ -1,41 +1,55 @@
 from flask import Flask, request, jsonify
+from ultralytics import YOLO
+import cv2
+import numpy as np
 
 app = Flask(__name__)
 
-# 🔥 conversión de clase YOLO a nivel de riesgo
+# 🧠 cargar modelo YOLO
+model = YOLO("best.pt")
+
 def riesgo_ph(ph_class):
     if ph_class == "8":
-        return 3  # infección fuerte
+        return 3
     elif ph_class == "7_8":
-        return 2  # probable infección
+        return 2
     elif ph_class == "6_7":
-        return 1  # leve
+        return 1
     elif ph_class == "5_6":
-        return 0  # sano
+        return 0
     else:
         return 0
 
-@app.route("/predecir", methods=["POST"])
-def predecir():
-    data = request.json
+@app.route("/predict", methods=["POST"])
+def predict():
 
-    temp = float(data["temperatura"])
-    ph_class = data["ph"]   # viene como clase YOLO: "8", "7_8", etc.
+    # 📸 recibir imagen
+    file = request.files["image"]
 
-    riesgo = riesgo_ph(ph_class)
+    # convertir a OpenCV
+    npimg = np.frombuffer(file.read(), np.uint8)
+    frame = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+
+    # 🧠 YOLO inference
+    results = model(frame)
+
+    # clase detectada
+    cls = str(int(results[0].boxes.cls[0]))
+
+    # 🔥 si también quieres meter temperatura desde frontend
+    temp = float(request.form.get("temperatura", 36.5))
+
+    riesgo = riesgo_ph(cls)
 
     score = 0
 
-    # 🌡️ lógica de temperatura
     if temp > 38:
         score += 2
     elif temp > 37.5:
         score += 1
 
-    # 🧪 lógica de pH (YOLO)
     score += riesgo
 
-    # 🧠 DECISIÓN FINAL
     if score >= 3:
         resultado = "Infección probable 🚨"
     elif score == 2:
@@ -46,7 +60,7 @@ def predecir():
     return jsonify({
         "resultado": resultado,
         "score": score,
-        "ph_clase": ph_class,
+        "ph_clase": cls,
         "temperatura": temp
     })
 
