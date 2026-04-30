@@ -1,5 +1,6 @@
-
 flask
+flask-cors
 gunicorn
-scikit-learn
-joblib
+opencv-python
+numpy
+ultralytics
