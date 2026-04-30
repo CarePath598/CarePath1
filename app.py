@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-app = Flask(__name__)
+app = Flask(__name__) 
 CORS(app)
 
 # 🧠 cargar modelo UNA SOLA VEZ
